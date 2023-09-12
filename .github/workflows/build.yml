@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install bumpver & poetry
-        run: pip3 install poetry poetry-plugin-bundle
+        run: pip3 install bumpver poetry poetry-plugin-bundle
       - name: Setup git user
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
