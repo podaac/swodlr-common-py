@@ -28,8 +28,8 @@ class JobHandler(ABC):
     def invoke(self, event, _context):
         '''
         Method to be invoked by the lambda runtime. Performs validation of both
-        input and output data while deferring to the handle_jobs implementation to
-        handle the jobs themselves
+        input and output data while deferring to the handle_jobs implementation
+        to handle the jobs themselves
         '''
         records = event['Records']
         self._logger.debug('Records received: %d', len(records))
@@ -54,8 +54,8 @@ class JobHandler(ABC):
 
     def handle_jobs(self, input_jobs):
         '''
-        Handler that takes the raw jobs array and processes them individually with
-        handle_job. Can be overwritten in services to handle jobs in batch
+        Handler that takes the raw jobs array and processes them individually
+        with handle_job. Can be overwritten in services to handle jobs in batch
         '''
 
         output_jobs = [
@@ -66,8 +66,8 @@ class JobHandler(ABC):
     def _try_handle_job(self, input_job):
         '''
         Calls handle_job and gracefully handles any exceptions that are raised
-        by performing exponential backoffs. If max_attempts is reached, a job with
-        a failed status and traceback is produced
+        by performing exponential backoffs. If max_attempts is reached, a job
+        with a failed status and traceback is produced
         '''
 
         for duration in [i**2 for i in range(0, self._max_attempts + 1)]:
@@ -76,7 +76,7 @@ class JobHandler(ABC):
                 sleep(duration)
             try:
                 return self.handle_job(deepcopy(input_job))
-            except Exception: #pylint: disable=broad-exception-caught
+            except Exception:  # pylint: disable=broad-exception-caught
                 self._logger.exception(
                     'Exception occurred while running job handler'
                 )
@@ -95,6 +95,6 @@ class JobHandler(ABC):
     @abstractmethod
     def handle_job(self, job):
         '''
-        Handler which receives individual job objects and performs processing on
-        them. Should be implemented by subclasses
+        Handler which receives individual job objects and performs processing
+        on them. Should be implemented by subclasses
         '''

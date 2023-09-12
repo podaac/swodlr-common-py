@@ -35,8 +35,8 @@ class BaseUtilities(ABC):
     @abstractmethod
     def get_instance(cls):
         '''
-        Should be implemented by subclasses to create singleton instances of the
-        final utilities class
+        Should be implemented by subclasses to create singleton instances of
+        the final utilities class
         '''
 
     def _load_params_from_ssm(self):
