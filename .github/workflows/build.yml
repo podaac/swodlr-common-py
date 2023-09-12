@@ -25,6 +25,8 @@ jobs:
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
+      - name: Install dependencies
+        run: poetry install
 
       #   -- Testing & Linting --
       - name: Lint

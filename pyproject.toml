@@ -5,7 +5,7 @@ description = "A support library for SWODLR Python microservices containing comm
 authors = ["podaac-tva <podaac-tva@jpl.nasa.gov>"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{include = "swodlr_common"}]
+packages = [{include = "podaac/swodlr_common"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
