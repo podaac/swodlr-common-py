@@ -1,5 +1,5 @@
 '''The base implementation of SWODLR utility classes'''
-from abc import ABC, abstractmethod
+from abc import ABC
 import json
 import logging
 from importlib import resources
@@ -20,6 +20,10 @@ class BaseUtilities(ABC):
     '''
 
     def __init__(self, app_name, service_name):
+        if hasattr(BaseUtilities, '_instance'):
+            raise RuntimeError('Utilities were already initialized')
+
+        BaseUtilities._instance = self
         self._env = getenv('SWODLR_ENV', 'prod')
         self._app_name = app_name
         self._service_name = service_name
@@ -32,12 +36,15 @@ class BaseUtilities(ABC):
             load_dotenv()
 
     @classmethod
-    @abstractmethod
     def get_instance(cls):
         '''
-        Should be implemented by subclasses to create singleton instances of
-        the final utilities class
+        Returns the already initiated instance of a subclass which extends
+        BaseUtilities
         '''
+        if not hasattr(cls, '_instance'):
+            raise RuntimeError('Utilities were not initialized yet')
+
+        return cls._instance
 
     def _load_params_from_ssm(self):
         ssm = boto3.client('ssm')
