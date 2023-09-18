@@ -125,12 +125,19 @@ class BaseUtilities(ABC):
         Load a json schema from the schema folder and return the compiled
         schema
         '''
-        schemas = resources.files(podaac.swodlr_common) \
-            .joinpath('schemas')
-        schema_resource = schemas.joinpath(f'{name}.json')
+        def load_local(name):
+            name = name.removeprefix('swodlr-')
+            schemas = resources.files(podaac.swodlr_common) \
+                .joinpath('schemas')
+            schema_resource = schemas.joinpath(f'{name}.json')
 
-        if not schema_resource.is_file():
-            raise RuntimeError('Schema not found')
+            if not schema_resource.is_file():
+                raise RuntimeError('Schema not found')
 
-        with schema_resource.open('r', encoding='utf-8') as schema_json:
-            return fastjsonschema.compile(json.load(schema_json))
+            with schema_resource.open('r', encoding='utf-8') as schema_json:
+                return json.load(schema_json)
+
+        return fastjsonschema.compile(
+            definition=load_local(name),
+            handlers={'': load_local}
+        )
