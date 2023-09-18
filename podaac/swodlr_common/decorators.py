@@ -5,6 +5,7 @@ within service modules
 from copy import deepcopy
 import json
 import inspect
+import sys
 from time import sleep
 import traceback
 from weakref import WeakSet
@@ -40,13 +41,17 @@ def job_handler(handler):
     return handler
 
 
-def bulk_job_handler(handler):
+def bulk_job_handler(handler, returns_jobset=False):
     '''
     Decorator used to declare that a function is a bulk job handler. The
     function MUST have one input arg for an iterable of job objects and MUST
     return an iterable of job objects preserving the product_ids of each input
     job. This decorator will also inject a lambda_handler into the module.
     Only one handler per module may be declared
+
+    :param handler: the handler function to wrap. should have one parameter
+    :param returns_jobset: whether or not the function will return a jobset
+                          itself (True) or an array of job objects (False)
     '''
 
     module = inspect.getmodule(handler)
@@ -58,7 +63,7 @@ def bulk_job_handler(handler):
         )
 
     # Inject our lambda_handler into the module
-    module.lambda_handler = _generate_lambda_handler(handler)
+    module.lambda_handler = _generate_lambda_handler(handler, returns_jobset)
     return handler
 
 
@@ -82,10 +87,14 @@ def _generate_bulk_job_handler(handler):
         # handle_job surpassed allowed max attempts
         output_job = deepcopy(input_job)
 
+        exception = '\n'.join(traceback.format_exception(
+            sys.last_type, sys.last_value, sys.last_traceback  # pylint: disable=no-member # noqa: E501
+        ))
+
         if not hasattr(output_job, 'errors'):
             output_job['errors'] = []
         output_job['job_status'] = 'job-failed'
-        output_job['traceback'] = traceback.format_exc()
+        output_job['traceback'] = exception
         output_job['errors'].append('SDS pipeline failed')
 
         return output_job
@@ -99,7 +108,7 @@ def _generate_bulk_job_handler(handler):
     return default_bulk_job_handler
 
 
-def _generate_lambda_handler(handler):
+def _generate_lambda_handler(handler, returns_jobset=False):
     utils = BaseUtilities.get_instance()
     logger = utils.get_logger(__name__)
     validate_jobset = utils.load_json_schema('jobset')
@@ -117,11 +126,15 @@ def _generate_lambda_handler(handler):
                 logger.exception('Error validating input jobset')
                 logger.error(record['body'])
 
-        output_jobs = handler(input_jobs)
+        if returns_jobset:
+            output_jobset = handler(input_jobs)
+        else:
+            output_jobs = handler(input_jobs)
+            output_jobset = {'jobs': output_jobs}
 
         try:
-            job_set = validate_jobset({'jobs': output_jobs})
-            return job_set
+            jobset = validate_jobset(output_jobset)
+            return jobset
         except JsonSchemaException:
             logger.exception('Error validating output jobset')
             return None
