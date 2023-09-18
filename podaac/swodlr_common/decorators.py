@@ -87,7 +87,8 @@ def bulk_job_handler(*args, **kwargs):
 def _generate_bulk_job_handler(handler):
     utils = BaseUtilities.get_instance()
     logger = utils.get_logger(__name__)
-    max_attempts = utils.get_param('max_attempts')
+    max_attempts = int(utils.get_param('max_attempts')) \
+        if utils.get_param('max_attempts') is not None else 3
 
     def try_handler(input_job):
         for duration in [i**2 for i in range(0, max_attempts + 1)]:
