@@ -64,7 +64,9 @@ def bulk_job_handler(*args, **kwargs):
             )
 
         # Inject our lambda_handler into the module
-        module.lambda_handler = _generate_lambda_handler(handler, returns_jobset)
+        module.lambda_handler = _generate_lambda_handler(
+            handler, returns_jobset
+        )
         return handler
 
     returns_jobset = False
@@ -73,7 +75,7 @@ def bulk_job_handler(*args, **kwargs):
         if callable(args[0]):
             returns_jobset = False
             return inner(args[0])
-        elif isinstance(args[0], bool):
+        if isinstance(args[0], bool):
             returns_jobset = args[0]
             return inner
     elif 'returns_jobset' in kwargs:
