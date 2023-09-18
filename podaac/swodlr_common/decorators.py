@@ -41,7 +41,7 @@ def job_handler(handler):
     return handler
 
 
-def bulk_job_handler(handler, returns_jobset=False):
+def bulk_job_handler(*args, **kwargs):
     '''
     Decorator used to declare that a function is a bulk job handler. The
     function MUST have one input arg for an iterable of job objects and MUST
@@ -54,17 +54,33 @@ def bulk_job_handler(handler, returns_jobset=False):
                           itself (True) or an array of job objects (False)
     '''
 
-    module = inspect.getmodule(handler)
-    if module not in loaded_modules:
-        loaded_modules.add(module)
-    else:
-        raise RuntimeError(
-            'Multiple job handlers cannot be declared in one module'
-        )
+    def inner(handler):
+        module = inspect.getmodule(handler)
+        if module not in loaded_modules:
+            loaded_modules.add(module)
+        else:
+            raise RuntimeError(
+                'Multiple job handlers cannot be declared in one module'
+            )
 
-    # Inject our lambda_handler into the module
-    module.lambda_handler = _generate_lambda_handler(handler, returns_jobset)
-    return handler
+        # Inject our lambda_handler into the module
+        module.lambda_handler = _generate_lambda_handler(handler, returns_jobset)
+        return handler
+
+    returns_jobset = False
+
+    if len(args) == 1:
+        if callable(args[0]):
+            returns_jobset = False
+            return inner(args[0])
+        elif isinstance(args[0], bool):
+            returns_jobset = args[0]
+            return inner
+    elif 'returns_jobset' in kwargs:
+        returns_jobset = kwargs['returns_jobset']
+        return inner
+
+    raise RuntimeError('Invalid args provided')
 
 
 def _generate_bulk_job_handler(handler):
