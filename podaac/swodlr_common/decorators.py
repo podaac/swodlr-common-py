@@ -132,17 +132,14 @@ def _generate_lambda_handler(handler, returns_jobset=False):
     validate_jobset = utils.load_json_schema('jobset')
 
     def lambda_handler(event, _context):
-        records = event['Records']
-        logger.debug('Records received: %d', len(records))
+        try:
+            input_jobset = validate_jobset(event)
+        except JsonSchemaException:
+            logger.exception('Error validating input jobset')
+            logger.error(event)
 
-        input_jobs = []
-        for record in records:
-            try:
-                body = validate_jobset(json.loads(record['body']))
-                input_jobs.extend(body['jobs'])
-            except JsonSchemaException:
-                logger.exception('Error validating input jobset')
-                logger.error(record['body'])
+        input_jobs = input_jobset['jobs']
+        logger.info('Received %d jobs', len(input_jobs))
 
         if returns_jobset:
             output_jobset = handler(input_jobs)
