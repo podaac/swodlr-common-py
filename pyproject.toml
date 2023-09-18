@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "swodlr-common"
-version = "0.1.1-alpha3"
+version = "0.1.1-alpha4"
 description = "A support library for SWODLR Python microservices containing common utilities, models, and JSON schemas"
 authors = ["podaac-tva <podaac-tva@jpl.nasa.gov>"]
 license = "Apache-2.0"
