@@ -2,11 +2,14 @@
 Decorators utilized to declare job handlers and inject lambda_handlers
 within service modules
 '''
+from collections.abc import Mapping, MutableMapping
 from copy import deepcopy
 import inspect
+from logging import Filter, LogRecord, LoggerAdapter
 import sys
 from time import sleep
 import traceback
+from typing import Any
 from weakref import WeakSet
 
 from fastjsonschema import JsonSchemaException
@@ -14,6 +17,25 @@ from fastjsonschema import JsonSchemaException
 from .utilities import BaseUtilities
 
 loaded_modules = WeakSet()
+
+
+class JobMetadataInjector(LoggerAdapter):
+    def __init__(self, logger, job):
+        super().__init__(logger, None)
+        self._job = job
+
+    def process(self, msg, kwargs):
+        if isinstance(msg, str):
+            return (
+                '[product_id: %s, job_id: %s] %s'.format(
+                    self._job['product_id'],
+                    self._job['job_id'],
+                    msg
+                ),
+                kwargs
+            )
+
+        return (msg, kwargs)
 
 
 def job_handler(handler):
@@ -35,7 +57,7 @@ def job_handler(handler):
 
     # Inject our lambda_handler into the module
     module.lambda_handler = _generate_lambda_handler(
-        _generate_bulk_job_handler(handler)
+        _generate_bulk_job_handler(handler, module)
     )
     return handler
 
@@ -84,19 +106,23 @@ def bulk_job_handler(*args, **kwargs):
     raise RuntimeError('Invalid args provided')
 
 
-def _generate_bulk_job_handler(handler):
+def _generate_bulk_job_handler(handler, module):
     utils = BaseUtilities.get_instance()
     logger = utils.get_logger(__name__)
+    module_logger = utils.get_logger(module.__name__)
     max_attempts = int(utils.get_param('max_attempts')) \
         if utils.get_param('max_attempts') is not None else 3
 
     def try_handler(input_job):
+        # Add injector to provide job metadata
+        job_logger = JobMetadataInjector(module_logger)
+
         for duration in [i**2 for i in range(0, max_attempts + 1)]:
             if duration > 0:
                 logger.info('Backing off for %d seconds', duration)
                 sleep(duration)
             try:
-                return handler(deepcopy(input_job))
+                return handler(deepcopy(input_job), job_logger)
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     'Exception occurred while running job handler'
