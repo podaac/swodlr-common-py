@@ -2,14 +2,12 @@
 Decorators utilized to declare job handlers and inject lambda_handlers
 within service modules
 '''
-from collections.abc import Mapping, MutableMapping
 from copy import deepcopy
 import inspect
-from logging import Filter, LogRecord, LoggerAdapter
+from logging import LoggerAdapter
 import sys
 from time import sleep
 import traceback
-from typing import Any
 from weakref import WeakSet
 
 from fastjsonschema import JsonSchemaException
@@ -20,6 +18,10 @@ loaded_modules = WeakSet()
 
 
 class JobMetadataInjector(LoggerAdapter):
+    '''
+    Wraps a logging.Logger object and injects job metadata into each log message
+    '''
+
     def __init__(self, logger, job):
         super().__init__(logger, None)
         self._job = job
@@ -27,9 +29,9 @@ class JobMetadataInjector(LoggerAdapter):
     def process(self, msg, kwargs):
         if isinstance(msg, str):
             return (
-                '[product_id: %s, job_id: %s] %s'.format(
-                    self._job['product_id'],
-                    self._job['job_id'],
+                '[product_id: {}, job_id: {}] {}'.format(  # pylint: disable=consider-using-f-string
+                    self._job.get('product_id'),
+                    self._job.get('job_id'),
                     msg
                 ),
                 kwargs
@@ -115,7 +117,7 @@ def _generate_bulk_job_handler(handler, module):
 
     def try_handler(input_job):
         # Add injector to provide job metadata
-        job_logger = JobMetadataInjector(module_logger)
+        job_logger = JobMetadataInjector(module_logger, input_job)
 
         for duration in [i**2 for i in range(0, max_attempts + 1)]:
             if duration > 0:
