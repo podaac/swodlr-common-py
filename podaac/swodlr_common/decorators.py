@@ -115,17 +115,23 @@ def _generate_bulk_job_handler(handler, module):
     module_logger = utils.get_logger(module.__name__)
     max_attempts = int(utils.get_param('max_attempts')) \
         if utils.get_param('max_attempts') is not None else 3
+    pass_job_logger = len(inspect.signature(handler).parameters) >= 2
 
     def try_handler(input_job):
-        # Add injector to provide job metadata
-        job_logger = JobMetadataInjector(module_logger, input_job)
+        if pass_job_logger:
+            # Add injector to provide job metadata
+            job_logger = JobMetadataInjector(module_logger, input_job)
 
         for duration in [i**2 for i in range(0, max_attempts + 1)]:
             if duration > 0:
                 logger.info('Backing off for %d seconds', duration)
                 sleep(duration)
             try:
-                return handler(deepcopy(input_job), job_logger)
+                input_job_copy = deepcopy(input_job)
+                input_params = (input_job_copy, job_logger) if pass_job_logger \
+                    else (input_job_copy,)
+
+                return handler(*input_params)
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     'Exception occurred while running job handler'
