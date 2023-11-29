@@ -19,7 +19,8 @@ loaded_modules = WeakSet()
 
 class JobMetadataInjector(LoggerAdapter):
     '''
-    Wraps a logging.Logger object and injects job metadata into each log message
+    Wraps a logging.Logger object and injects job metadata into each log
+    message
     '''
 
     def __init__(self, logger, job):
@@ -29,7 +30,7 @@ class JobMetadataInjector(LoggerAdapter):
     def process(self, msg, kwargs):
         if isinstance(msg, str):
             return (
-                '[product_id: {}, job_id: {}] {}'.format(  # pylint: disable=consider-using-f-string
+                '[product_id: {}, job_id: {}] {}'.format(  # pylint: disable=consider-using-f-string # noqa: E501
                     self._job.get('product_id'),
                     self._job.get('job_id'),
                     msg
