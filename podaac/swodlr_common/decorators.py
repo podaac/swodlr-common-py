@@ -4,7 +4,6 @@ within service modules
 '''
 from copy import deepcopy
 import inspect
-from logging import LoggerAdapter
 import sys
 from time import sleep
 import traceback
@@ -105,8 +104,8 @@ def _generate_bulk_job_handler(handler, module):
                 sleep(duration)
             try:
                 input_job_copy = deepcopy(input_job)
-                input_params = (input_job_copy, job_logger) if pass_job_logger \
-                    else (input_job_copy,)
+                input_params = (input_job_copy, job_logger) \
+                    if pass_job_logger else (input_job_copy,)
 
                 return handler(*input_params)
             except Exception:  # pylint: disable=broad-exception-caught

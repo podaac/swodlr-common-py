@@ -1,3 +1,4 @@
+'''Useful logging utilities and helpers'''
 from logging import LoggerAdapter
 
 
