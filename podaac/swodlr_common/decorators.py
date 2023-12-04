@@ -11,6 +11,7 @@ from weakref import WeakSet
 
 from fastjsonschema import JsonSchemaException
 
+from .logging import JobMetadataInjector
 from .utilities import BaseUtilities
 
 loaded_modules = WeakSet()
@@ -35,7 +36,7 @@ def job_handler(handler):
 
     # Inject our lambda_handler into the module
     module.lambda_handler = _generate_lambda_handler(
-        _generate_bulk_job_handler(handler)
+        _generate_bulk_job_handler(handler, module)
     )
     return handler
 
@@ -84,19 +85,29 @@ def bulk_job_handler(*args, **kwargs):
     raise RuntimeError('Invalid args provided')
 
 
-def _generate_bulk_job_handler(handler):
+def _generate_bulk_job_handler(handler, module):
     utils = BaseUtilities.get_instance()
     logger = utils.get_logger(__name__)
+    module_logger = utils.get_logger(module.__name__)
     max_attempts = int(utils.get_param('max_attempts')) \
         if utils.get_param('max_attempts') is not None else 3
+    pass_job_logger = len(inspect.signature(handler).parameters) >= 2
 
     def try_handler(input_job):
+        if pass_job_logger:
+            # Add injector to provide job metadata
+            job_logger = JobMetadataInjector(module_logger, input_job)
+
         for duration in [i**2 for i in range(0, max_attempts + 1)]:
             if duration > 0:
                 logger.info('Backing off for %d seconds', duration)
                 sleep(duration)
             try:
-                return handler(deepcopy(input_job))
+                input_job_copy = deepcopy(input_job)
+                input_params = (input_job_copy, job_logger) \
+                    if pass_job_logger else (input_job_copy,)
+
+                return handler(*input_params)
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     'Exception occurred while running job handler'
