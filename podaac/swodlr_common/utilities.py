@@ -3,28 +3,32 @@ from abc import ABC
 import json
 import logging
 from importlib import resources
-from os import getenv
+from os import getenv, path
 import re
 from tempfile import NamedTemporaryFile
 from urllib.parse import urlparse
-from os import path
 
 import boto3
 import fastjsonschema
 from elasticsearch import Elasticsearch
 from requests import Session
 
-from .utilities import utils
+import podaac.swodlr_common
+
 
 class _SemVer:
     VERSION_RE = re.compile(r'(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)')
 
     @staticmethod
-    def attempt_parse(cls, semver_str):
+    def attempt_parse(semver_str):
+        '''
+        Attempts to parse a string into a SemVer object; if no semver-like
+        structures are found in the string, the method will return a None
+        '''
         parsed_version = _SemVer.VERSION_RE.search(semver_str)
         if parsed_version is None:
             return None
-        
+
         return _SemVer(
             parsed_version.group('major'),
             parsed_version.group('minor'),
@@ -45,27 +49,27 @@ class _SemVer:
             self.minor == other.minor and
             self.patch == other.patch
         )
-    
+
     def __lt__(self, other) -> bool:
         if not isinstance(other, type(self)):
             return super().__lt__(other)
-        
+
         return (
             self.major < other.major or
             self.minor < other.minor or
             self.patch < other.patch
         )
-    
+
     def __gt__(self, other) -> bool:
         if not isinstance(other, type(self)):
             return super().__gt__(other)
-        
+
         return (
             self.major > other.major or
             self.minor > other.minor or
             self.patch > other.patch
         )
-    
+
     def __le__(self, other) -> bool:
         if not isinstance(other, type(self)):
             return super().__le__(other)
@@ -218,6 +222,7 @@ class BaseUtilities(ABC):
             base_path = base_sds_url.path
             mozart_es_path = path.joinpath(base_path, '/mozart_es/')
 
+            # pylint: disable=attribute-defined-outside-init
             self._sds_client = Elasticsearch(
                 mozart_es_path,
                 basic_auth=(
@@ -234,7 +239,7 @@ class BaseUtilities(ABC):
             }
         })
 
-        if (len(results['hits']['hits']) == 0):
+        if len(results['hits']['hits']) == 0:
             raise RuntimeError('Specified job spec not found')
 
         job_versions = {}
