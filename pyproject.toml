@@ -12,6 +12,7 @@ python = "^3.9"
 boto3 = "^1.28.38"
 fastjsonschema = "^2.18.0"
 requests = "^2.31.0"
+elasticsearch = "^8.11.0"
 
 
 [tool.poetry.group.dev.dependencies]

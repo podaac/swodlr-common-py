@@ -4,13 +4,79 @@ import json
 import logging
 from importlib import resources
 from os import getenv
+import re
 from tempfile import NamedTemporaryFile
+from urllib.parse import urlparse
+from os import path
 
 import boto3
 import fastjsonschema
+from elasticsearch import Elasticsearch
 from requests import Session
 
-import podaac.swodlr_common
+from .utilities import utils
+
+class _SemVer:
+    VERSION_RE = re.compile(r'(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)')
+
+    @staticmethod
+    def attempt_parse(cls, semver_str):
+        parsed_version = _SemVer.VERSION_RE.search(semver_str)
+        if parsed_version is None:
+            return None
+        
+        return _SemVer(
+            parsed_version.group('major'),
+            parsed_version.group('minor'),
+            parsed_version.group('patch')
+        )
+
+    def __init__(self, major, minor, patch):
+        self.major = int(major)
+        self.minor = int(minor)
+        self.patch = int(patch)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return super().__eq__(other)
+
+        return (
+            self.major == other.major and
+            self.minor == other.minor and
+            self.patch == other.patch
+        )
+    
+    def __lt__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return super().__lt__(other)
+        
+        return (
+            self.major < other.major or
+            self.minor < other.minor or
+            self.patch < other.patch
+        )
+    
+    def __gt__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return super().__gt__(other)
+        
+        return (
+            self.major > other.major or
+            self.minor > other.minor or
+            self.patch > other.patch
+        )
+    
+    def __le__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return super().__le__(other)
+
+        return (self.__lt__(other) or self.__eq__(other))
+
+    def __ge__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return super().__ge__(other)
+
+        return (self.__gt__(other) or self.__eq__(other))
 
 
 class BaseUtilities(ABC):
@@ -141,3 +207,44 @@ class BaseUtilities(ABC):
             definition=load_local(name),
             handlers={'': load_local}
         )
+
+    def get_latest_job_version(self, job_name):
+        '''
+        Retrieves the latest version of a job spec with a (very) lazy version
+        parsing and sorting algorithm
+        '''
+        if not hasattr(self, '_sds_client'):
+            base_sds_url = urlparse(self.get_param('sds_host'))
+            base_path = base_sds_url.path
+            mozart_es_path = path.joinpath(base_path, '/mozart_es/')
+
+            self._sds_client = Elasticsearch(
+                mozart_es_path,
+                basic_auth=(
+                    self.get_param('sds_username'),
+                    self.get_param('sds_password')
+                )
+            )
+
+        results = self._sds_client.search(index='job_specs', query={
+            'prefix': {
+                'id.keyword': {
+                    'value': f'${job_name}:'
+                }
+            }
+        })
+
+        if (len(results['hits']['hits']) == 0):
+            raise RuntimeError('Specified job spec not found')
+
+        job_versions = {}
+        for result in results['hits']['hits']:
+            version = _SemVer.attempt_parse(result['_source']['job-version'])
+            if version is None:
+                # No semver compatible version found
+                continue
+
+            if version not in job_versions:
+                job_versions[version] = result['_source']
+
+        return job_versions[sorted(job_versions.keys(), reverse=True)[0]]
