@@ -178,6 +178,42 @@ files = [
 graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
+name = "elastic-transport"
+version = "8.10.0"
+description = "Transport classes and utilities shared among Python Elastic client libraries"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "elastic-transport-8.10.0.tar.gz", hash = "sha256:ca51d08a4d16611701a57fb70592dbc7cb68c40fef4ac1becfe4aea100fe82ef"},
+    {file = "elastic_transport-8.10.0-py3-none-any.whl", hash = "sha256:e73ac3c7ad4e9209436207143d797d3f6b62a399a34d2729e069e44c9ea2cadc"},
+]
+
+[package.dependencies]
+certifi = "*"
+urllib3 = ">=1.26.2,<3"
+
+[package.extras]
+develop = ["aiohttp", "furo", "mock", "pytest", "pytest-asyncio", "pytest-cov", "pytest-httpserver", "pytest-mock", "requests", "sphinx (>2)", "sphinx-autodoc-typehints", "trustme"]
+
+[[package]]
+name = "elasticsearch"
+version = "8.11.0"
+description = "Python client for Elasticsearch"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "elasticsearch-8.11.0-py3-none-any.whl", hash = "sha256:26b72957ee617c9f0b23ac872e1c133cf9d7f5d439c615daaa11016265da36ab"},
+    {file = "elasticsearch-8.11.0.tar.gz", hash = "sha256:9e08413beaff3a46bc10c6c57069a84704df6aaa93085c737df07f58a2811b78"},
+]
+
+[package.dependencies]
+elastic-transport = ">=8,<9"
+
+[package.extras]
+async = ["aiohttp (>=3,<4)"]
+requests = ["requests (>=2.4.0,<3.0.0)"]
+
+[[package]]
 name = "fastjsonschema"
 version = "2.18.0"
 description = "Fastest Python implementation of JSON schema"
@@ -581,4 +617,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "52c2fbadaa19385f3f8cf696d59da93e99d15cf2188737daba5cf0070f05738f"
+content-hash = "a624802426a5fa4b4c1b89015dada4acf7a1d16ebcb7c120791c40cc4211ff2f"
