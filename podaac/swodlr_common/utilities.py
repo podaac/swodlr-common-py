@@ -217,6 +217,9 @@ class BaseUtilities(ABC):
         Retrieves the latest version of a job spec with a (very) lazy version
         parsing and sorting algorithm
         '''
+        if self.get_param('sds_pcm_release_tag') is not None:
+            return self.get_param('sds_pcm_release_tag')
+
         if not hasattr(self, '_sds_client'):
             base_sds_url = urlparse(self.get_param('sds_host'))
             base_path = base_sds_url.path
