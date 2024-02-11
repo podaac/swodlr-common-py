@@ -162,9 +162,9 @@ def _generate_lambda_handler(handler, returns_jobset=False):
         logger.info('Received %d input params', len(input_jobset['inputs']))
 
         if returns_jobset:
-            output_jobset = handler(jobset)
+            output_jobset = handler(input_jobset)
         else:
-            output_jobs = handler(jobset)
+            output_jobs = handler(input_jobset)
             output_jobset = {'jobs': output_jobs}
 
         output_jobset['inputs'] = inputs
