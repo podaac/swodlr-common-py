@@ -17,7 +17,7 @@ import podaac.swodlr_common
 
 
 class _SemVer:
-    VERSION_RE = re.compile(r'(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)')
+    VERSION_RE = re.compile(r'(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)')
 
     @staticmethod
     def attempt_parse(semver_str):
@@ -223,7 +223,7 @@ class BaseUtilities(ABC):
         if not hasattr(self, '_sds_client'):
             base_sds_url = urlparse(self.get_param('sds_host'))
             base_path = base_sds_url.path
-            mozart_es_path = path.joinpath(base_path, '/mozart_es/')
+            mozart_es_path = path.join(base_path, '/mozart_es/')
 
             # pylint: disable=attribute-defined-outside-init
             self._sds_client = Elasticsearch(
