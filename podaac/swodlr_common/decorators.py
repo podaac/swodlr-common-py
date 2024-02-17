@@ -105,11 +105,11 @@ def _generate_bulk_job_handler(handler, module):
                 sleep(duration)
             try:
                 input_job_copy = deepcopy(input_job)
-                input_params = (input_job_copy,)
-                input_params += (job_logger,) if pass_job_logger else ()
-                input_params += (input_params,) if pass_input_params else ()
+                handler_params = (input_job_copy,)
+                handler_params += (job_logger,) if pass_job_logger else ()
+                handler_params += (input_params,) if pass_input_params else ()
 
-                return handler(*input_params)
+                return handler(*handler_params)
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     'Exception occurred while running job handler'
