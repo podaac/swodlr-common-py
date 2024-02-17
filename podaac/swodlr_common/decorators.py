@@ -154,6 +154,7 @@ def _generate_lambda_handler(handler, returns_jobset=False):
         except JsonSchemaException:
             logger.exception('Error validating input jobset')
             logger.error(event)
+            return None
 
         # Ensure that original input dict is preserved before handler
         inputs = deepcopy(input_jobset['inputs'])
