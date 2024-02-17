@@ -211,6 +211,23 @@ class BaseUtilities(ABC):
             definition=load_local(name),
             handlers={'': load_local}
         )
+        
+    def get_mozart_es_client(self):
+        if not hasattr(self, '_mozart_es_client'):
+            base_sds_url = urlparse(self.get_param('sds_host'))
+            base_path = base_sds_url.path
+            mozart_es_path = path.join(base_path, '/mozart_es/')
+
+            # pylint: disable=attribute-defined-outside-init
+            self._mozart_es_client = Elasticsearch(
+                mozart_es_path,
+                basic_auth=(
+                    self.get_param('sds_username'),
+                    self.get_param('sds_password')
+                )
+            )
+        
+        return self._mozart_es_client
 
     def get_latest_job_version(self, job_name):
         '''
@@ -220,21 +237,9 @@ class BaseUtilities(ABC):
         if self.get_param('sds_pcm_release_tag') is not None:
             return self.get_param('sds_pcm_release_tag')
 
-        if not hasattr(self, '_sds_client'):
-            base_sds_url = urlparse(self.get_param('sds_host'))
-            base_path = base_sds_url.path
-            mozart_es_path = path.join(base_path, '/mozart_es/')
+        mozart_es_client = self.get_mozart_es_client()
 
-            # pylint: disable=attribute-defined-outside-init
-            self._sds_client = Elasticsearch(
-                mozart_es_path,
-                basic_auth=(
-                    self.get_param('sds_username'),
-                    self.get_param('sds_password')
-                )
-            )
-
-        results = self._sds_client.search(index='job_specs', query={
+        results = mozart_es_client.search(index='job_specs', query={
             'prefix': {
                 'id.keyword': {
                     'value': f'${job_name}:'
