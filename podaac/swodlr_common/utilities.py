@@ -217,10 +217,21 @@ class BaseUtilities(ABC):
             base_sds_url = urlparse(self.get_param('sds_host'))
             base_path = base_sds_url.path
             mozart_es_path = path.join(base_path, '/mozart_es/')
+            netloc = base_sds_url.netloc.split(':')
+    
+            scheme = base_sds_url.scheme
+            hostname = netloc[0]
+            port = netloc[1] if len(netloc) == 2 \
+                else {'http': 80, 'https': 443}[scheme]
 
             # pylint: disable=attribute-defined-outside-init
             self._mozart_es_client = Elasticsearch(
-                mozart_es_path,
+                hosts=[{
+                    'scheme': scheme,
+                    'host': hostname,
+                    'port': port,
+                    'path_prefix': mozart_es_path
+                }],
                 basic_auth=(
                     self.get_param('sds_username'),
                     self.get_param('sds_password')
