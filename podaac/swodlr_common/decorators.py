@@ -119,7 +119,9 @@ def _generate_bulk_job_handler(handler, module):
         output_job = deepcopy(input_job)
 
         exception = '\n'.join(traceback.format_exception(
-            sys.last_type, sys.last_value, sys.last_traceback  # pylint: disable=no-member # noqa: E501
+            getattr(sys, 'last_type', None),
+            getattr(sys, 'last_value', None),
+            getattr(sys, 'last_traceback', None),
         ))
 
         if not hasattr(output_job, 'errors'):
