@@ -92,8 +92,9 @@ def _generate_bulk_job_handler(handler, module):
     max_attempts = int(utils.get_param('max_attempts')) \
         if utils.get_param('max_attempts') is not None else 3
     pass_job_logger = len(inspect.signature(handler).parameters) >= 2
+    pass_input_params = len(inspect.signature(handler).parameters) >= 3
 
-    def try_handler(input_job):
+    def try_handler(input_job, input_params):
         if pass_job_logger:
             # Add injector to provide job metadata
             job_logger = JobMetadataInjector(module_logger, input_job)
@@ -104,10 +105,11 @@ def _generate_bulk_job_handler(handler, module):
                 sleep(duration)
             try:
                 input_job_copy = deepcopy(input_job)
-                input_params = (input_job_copy, job_logger) \
-                    if pass_job_logger else (input_job_copy,)
+                handler_params = (input_job_copy,)
+                handler_params += (job_logger,) if pass_job_logger else ()
+                handler_params += (input_params,) if pass_input_params else ()
 
-                return handler(*input_params)
+                return handler(*handler_params)
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     'Exception occurred while running job handler'
@@ -117,7 +119,9 @@ def _generate_bulk_job_handler(handler, module):
         output_job = deepcopy(input_job)
 
         exception = '\n'.join(traceback.format_exception(
-            sys.last_type, sys.last_value, sys.last_traceback  # pylint: disable=no-member # noqa: E501
+            getattr(sys, 'last_type', None),
+            getattr(sys, 'last_value', None),
+            getattr(sys, 'last_traceback', None),
         ))
 
         if not hasattr(output_job, 'errors'):
@@ -128,9 +132,13 @@ def _generate_bulk_job_handler(handler, module):
 
         return output_job
 
-    def default_bulk_job_handler(input_jobs):
+    def default_bulk_job_handler(input_jobset):
         output_jobs = [
-            try_handler(input_job) for input_job in input_jobs
+            try_handler(
+                input_job,
+                input_jobset['inputs'][input_job['product_id']]
+            )
+            for input_job in input_jobset['jobs']
         ]
         return output_jobs
 
@@ -148,15 +156,21 @@ def _generate_lambda_handler(handler, returns_jobset=False):
         except JsonSchemaException:
             logger.exception('Error validating input jobset')
             logger.error(event)
+            return None
 
-        input_jobs = input_jobset['jobs']
-        logger.info('Received %d jobs', len(input_jobs))
+        # Ensure that original input dict is preserved before handler
+        inputs = deepcopy(input_jobset['inputs'])
+
+        logger.info('Received %d jobs', len(input_jobset['jobs']))
+        logger.info('Received %d input params', len(input_jobset['inputs']))
 
         if returns_jobset:
-            output_jobset = handler(input_jobs)
+            output_jobset = handler(input_jobset)
         else:
-            output_jobs = handler(input_jobs)
+            output_jobs = handler(input_jobset)
             output_jobset = {'jobs': output_jobs}
+
+        output_jobset['inputs'] = inputs
 
         try:
             jobset = validate_jobset(output_jobset)
