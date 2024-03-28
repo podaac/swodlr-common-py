@@ -83,7 +83,7 @@ class _SemVer:
         return (self.__gt__(other) or self.__eq__(other))
 
 
-class BaseUtilities(ABC):
+class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
     '''
     An abstract base utilities class that microservices should extend for their
     own specific requirements
@@ -217,16 +217,16 @@ class BaseUtilities(ABC):
         Retrieve singleton of the Mozart ES client
         '''
         if not hasattr(self, '_mozart_es_client'):
-            self._mozart_es_client = self._build_es_client('mozart')
+            self._mozart_es_client = self._build_es_client('mozart')  # pylint: disable=attribute-defined-outside-init # noqa: E501
 
         return self._mozart_es_client
-    
+
     def get_grq_es_client(self):
         '''
         Retrieve singleton of the GRQ ES client
         '''
         if not hasattr(self, '_grq_es_client'):
-            self._grq_es_client = self._build_es_client('grq')
+            self._grq_es_client = self._build_es_client('grq')  # pylint: disable=attribute-defined-outside-init # noqa: E501
 
         return self._grq_es_client
 
@@ -245,7 +245,6 @@ class BaseUtilities(ABC):
         port = netloc[1] if len(netloc) == 2 \
             else {'http': 80, 'https': 443}[scheme]
 
-        # pylint: disable=attribute-defined-outside-init
         return Elasticsearch(
             hosts=[{
                 'scheme': scheme,
