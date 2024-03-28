@@ -211,34 +211,53 @@ class BaseUtilities(ABC):
             definition=load_local(name),
             handlers={'': load_local}
         )
-        
-    def get_mozart_es_client(self):
-        if not hasattr(self, '_mozart_es_client'):
-            base_sds_url = urlparse(self.get_param('sds_host'))
-            base_path = base_sds_url.path
-            mozart_es_path = path.join(base_path, '/mozart_es/')
-            netloc = base_sds_url.netloc.split(':')
-    
-            scheme = base_sds_url.scheme
-            hostname = netloc[0]
-            port = netloc[1] if len(netloc) == 2 \
-                else {'http': 80, 'https': 443}[scheme]
 
-            # pylint: disable=attribute-defined-outside-init
-            self._mozart_es_client = Elasticsearch(
-                hosts=[{
-                    'scheme': scheme,
-                    'host': hostname,
-                    'port': port,
-                    'path_prefix': mozart_es_path
-                }],
-                basic_auth=(
-                    self.get_param('sds_username'),
-                    self.get_param('sds_password')
-                )
-            )
-        
+    def get_mozart_es_client(self):
+        '''
+        Retrieve singleton of the Mozart ES client
+        '''
+        if not hasattr(self, '_mozart_es_client'):
+            self._mozart_es_client = self._build_es_client('mozart')
+
         return self._mozart_es_client
+    
+    def get_grq_es_client(self):
+        '''
+        Retrieve singleton of the GRQ ES client
+        '''
+        if not hasattr(self, '_grq_es_client'):
+            self._grq_es_client = self._build_es_client('grq')
+
+        return self._grq_es_client
+
+    def _build_es_client(self, component):
+        '''
+        Builds an ES client preconfigured for use against the SDS instance
+        with associated authentication handled
+        '''
+        base_sds_url = urlparse(self.get_param('sds_host'))
+        base_path = base_sds_url.path
+        es_path = path.join(base_path, f'/{component}_es/')
+        netloc = base_sds_url.netloc.split(':')
+
+        scheme = base_sds_url.scheme
+        hostname = netloc[0]
+        port = netloc[1] if len(netloc) == 2 \
+            else {'http': 80, 'https': 443}[scheme]
+
+        # pylint: disable=attribute-defined-outside-init
+        return Elasticsearch(
+            hosts=[{
+                'scheme': scheme,
+                'host': hostname,
+                'port': port,
+                'path_prefix': es_path
+            }],
+            basic_auth=(
+                self.get_param('sds_username'),
+                self.get_param('sds_password')
+            )
+        )
 
     def get_latest_job_version(self, job_name):
         '''
