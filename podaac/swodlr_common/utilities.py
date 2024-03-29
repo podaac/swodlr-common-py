@@ -17,7 +17,7 @@ import podaac.swodlr_common
 
 
 class _SemVer:
-    VERSION_RE = re.compile(r'(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)')
+    VERSION_RE = re.compile(r'(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)')
 
     @staticmethod
     def attempt_parse(semver_str):
@@ -83,7 +83,7 @@ class _SemVer:
         return (self.__gt__(other) or self.__eq__(other))
 
 
-class BaseUtilities(ABC):
+class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
     '''
     An abstract base utilities class that microservices should extend for their
     own specific requirements
@@ -212,6 +212,52 @@ class BaseUtilities(ABC):
             handlers={'': load_local}
         )
 
+    def get_mozart_es_client(self):
+        '''
+        Retrieve singleton of the Mozart ES client
+        '''
+        if not hasattr(self, '_mozart_es_client'):
+            self._mozart_es_client = self._build_es_client('mozart')  # pylint: disable=attribute-defined-outside-init # noqa: E501
+
+        return self._mozart_es_client
+
+    def get_grq_es_client(self):
+        '''
+        Retrieve singleton of the GRQ ES client
+        '''
+        if not hasattr(self, '_grq_es_client'):
+            self._grq_es_client = self._build_es_client('grq')  # pylint: disable=attribute-defined-outside-init # noqa: E501
+
+        return self._grq_es_client
+
+    def _build_es_client(self, component):
+        '''
+        Builds an ES client preconfigured for use against the SDS instance
+        with associated authentication handled
+        '''
+        base_sds_url = urlparse(self.get_param('sds_host'))
+        base_path = base_sds_url.path
+        es_path = path.join(base_path, f'/{component}_es/')
+        netloc = base_sds_url.netloc.split(':')
+
+        scheme = base_sds_url.scheme
+        hostname = netloc[0]
+        port = netloc[1] if len(netloc) == 2 \
+            else {'http': 80, 'https': 443}[scheme]
+
+        return Elasticsearch(
+            hosts=[{
+                'scheme': scheme,
+                'host': hostname,
+                'port': port,
+                'path_prefix': es_path
+            }],
+            basic_auth=(
+                self.get_param('sds_username'),
+                self.get_param('sds_password')
+            )
+        )
+
     def get_latest_job_version(self, job_name):
         '''
         Retrieves the latest version of a job spec with a (very) lazy version
@@ -220,21 +266,9 @@ class BaseUtilities(ABC):
         if self.get_param('sds_pcm_release_tag') is not None:
             return self.get_param('sds_pcm_release_tag')
 
-        if not hasattr(self, '_sds_client'):
-            base_sds_url = urlparse(self.get_param('sds_host'))
-            base_path = base_sds_url.path
-            mozart_es_path = path.joinpath(base_path, '/mozart_es/')
+        mozart_es_client = self.get_mozart_es_client()
 
-            # pylint: disable=attribute-defined-outside-init
-            self._sds_client = Elasticsearch(
-                mozart_es_path,
-                basic_auth=(
-                    self.get_param('sds_username'),
-                    self.get_param('sds_password')
-                )
-            )
-
-        results = self._sds_client.search(index='job_specs', query={
+        results = mozart_es_client.search(index='job_specs', query={
             'prefix': {
                 'id.keyword': {
                     'value': f'${job_name}:'
