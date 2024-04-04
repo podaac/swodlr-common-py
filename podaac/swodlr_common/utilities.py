@@ -264,7 +264,7 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         parsing and sorting algorithm
         '''
         if self.get_param('sds_pcm_release_tag') is not None:
-            return self.get_param('sds_pcm_release_tag')
+            return f'{job_name}:{self.get_param('sds_pcm_release_tag')}'
 
         mozart_es_client = self.get_mozart_es_client()
 
@@ -289,4 +289,5 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
             if version not in job_versions:
                 job_versions[version] = result['_source']
 
-        return job_versions[sorted(job_versions.keys(), reverse=True)[0]]
+        latest_version = job_versions[sorted(job_versions.keys(), reverse=True)[0]]
+        return f'{job_name}:{latest_version}'
