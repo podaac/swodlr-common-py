@@ -261,7 +261,7 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
                 'scheme': scheme,
                 'host': hostname,
                 'port': port,
-                'path_prefix': es_path
+                'url_prefix': es_path
             }],
             http_auth=(
                 self.get_param('sds_username'),
