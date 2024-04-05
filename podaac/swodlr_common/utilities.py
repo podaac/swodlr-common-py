@@ -263,7 +263,7 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
                 'port': port,
                 'path_prefix': es_path
             }],
-            basic_auth=(
+            http_auth=(
                 self.get_param('sds_username'),
                 self.get_param('sds_password')
             ),
