@@ -267,7 +267,7 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
                 self.get_param('sds_username'),
                 self.get_param('sds_password')
             ),
-            *ssl_params
+            **ssl_params
         )
 
     def get_latest_job_version(self, job_name):
