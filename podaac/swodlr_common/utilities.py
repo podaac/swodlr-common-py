@@ -142,6 +142,18 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
             name = param['Name'].removeprefix(self._ssm_path)
             self._ssm_parameters[name] = param['Value']
 
+    def _get_ssl_cert_path(self):
+        ca_cert = self.get_param('sds_ca_cert')
+
+        if ca_cert is None:
+            return None
+        else:
+            self._ssl_cert_file = NamedTemporaryFile('w', delete=False)
+            self._ssl_cert_file.write(ca_cert)
+            self._ssl_cert_file.flush()
+
+        return self._ssl_cert_file.name
+
     def _get_sds_session(self):
         '''
         Lazily create authenticated session for internal use
@@ -150,19 +162,15 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         OUTSIDE OF THIS UTILITY CLASS OR CREDENTIALS MAY LEAK
         '''
         if not hasattr(self, '_session'):
-            ca_cert = self.get_param('sds_ca_cert')
             username = self.get_param('sds_username')
             password = self.get_param('sds_password')
 
             session = Session()
             session.auth = (username, password)
 
-            if ca_cert is not None:
-                # pylint: disable=consider-using-with
-                cert_file = NamedTemporaryFile('w', delete=False)
-                cert_file.write(ca_cert)
-                cert_file.flush()
-                session.verify = cert_file.name
+            ssl_cert_path = self._get_ssl_cert_path()
+            if ssl_cert_path is not None:
+                session.verify = ssl_cert_path
 
             self._session = session  # noqa: E501 # pylint: disable=attribute-defined-outside-init
 
@@ -245,6 +253,9 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         port = netloc[1] if len(netloc) == 2 \
             else {'http': 80, 'https': 443}[scheme]
 
+        ssl_params = {'ca_certs': self._get_ssl_cert_path()} \
+            if self._get_ssl_cert_path() is not None else {}
+
         return Elasticsearch(
             hosts=[{
                 'scheme': scheme,
@@ -255,7 +266,8 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
             basic_auth=(
                 self.get_param('sds_username'),
                 self.get_param('sds_password')
-            )
+            ),
+            *ssl_params
         )
 
     def get_latest_job_version(self, job_name):
