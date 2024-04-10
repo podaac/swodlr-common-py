@@ -282,13 +282,18 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
 
         mozart_es_client = self.get_mozart_es_client()
 
-        results = mozart_es_client.search(index='job_specs', query={
-            'prefix': {
-                'id.keyword': {
-                    'value': f'${job_name}:'
+        results = mozart_es_client.search(
+            index='job_specs',
+            body={
+                'query': {
+                    'prefix': {
+                        'id.keyword': {
+                            'value': f'${job_name}:'
+                        }
+                    }
                 }
             }
-        })
+        )
 
         if len(results['hits']['hits']) == 0:
             raise RuntimeError('Specified job spec not found')
