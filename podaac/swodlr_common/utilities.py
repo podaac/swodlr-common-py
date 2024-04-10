@@ -147,10 +147,11 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
 
         if ca_cert is None:
             return None
-        else:
-            self._ssl_cert_file = NamedTemporaryFile('w', delete=False)
-            self._ssl_cert_file.write(ca_cert)
-            self._ssl_cert_file.flush()
+
+        # pylint: disable-next=attribute-defined-outside-init, consider-using-with # noqa: E501
+        self._ssl_cert_file = NamedTemporaryFile('w', delete=False)
+        self._ssl_cert_file.write(ca_cert)
+        self._ssl_cert_file.flush()
 
         return self._ssl_cert_file.name
 
@@ -302,5 +303,7 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
             if version not in job_versions:
                 job_versions[version] = result['_source']
 
-        latest_version = job_versions[sorted(job_versions.keys(), reverse=True)[0]]
+        latest_version = job_versions[
+            sorted(job_versions.keys(), reverse=True)[0]
+        ]
         return f'{job_name}:{latest_version}'
