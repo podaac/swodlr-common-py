@@ -291,13 +291,13 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
                 'query': {
                     'prefix': {
                         'id.keyword': {
-                            'value': f'${job_name}:'
+                            'value': f'{job_name}:'
                         }
                     }
                 }
             }
         )
-        
+
         logger.debug('Job spec results: %s', str(results['hits']['hits']))
 
         if len(results['hits']['hits']) == 0:
