@@ -280,7 +280,7 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         parsing and sorting algorithm
         '''
         logger = self.get_logger(__name__)
-        
+
         if self.get_param('sds_pcm_release_tag') is not None:
             version = self.get_param('sds_pcm_release_tag')
             logger.debug('Explicit PCM tag used: %s', version)
