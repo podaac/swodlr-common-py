@@ -82,6 +82,9 @@ class _SemVer:
 
         return (self.__gt__(other) or self.__eq__(other))
 
+    def __hash__(self) -> str:
+        return hash((self.major, self.minor, self.patch))
+
 
 class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
     '''
