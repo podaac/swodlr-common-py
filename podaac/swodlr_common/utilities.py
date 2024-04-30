@@ -320,5 +320,4 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         sorted_versions = sorted(job_versions.keys(), reverse=True)
         logger.debug('Sorted versions: %s', str(sorted_versions))
 
-        latest_version = job_versions[sorted_versions[0]]
-        return f'{job_name}:{latest_version}'
+        return job_versions[sorted_versions[0]]['id']
