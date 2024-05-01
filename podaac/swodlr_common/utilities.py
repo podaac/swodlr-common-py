@@ -82,6 +82,9 @@ class _SemVer:
 
         return (self.__gt__(other) or self.__eq__(other))
 
+    def __hash__(self) -> str:
+        return hash((self.major, self.minor, self.patch))
+
 
 class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
     '''
@@ -276,8 +279,11 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         Retrieves the latest version of a job spec with a (very) lazy version
         parsing and sorting algorithm
         '''
+        logger = self.get_logger(__name__)
+
         if self.get_param('sds_pcm_release_tag') is not None:
             version = self.get_param('sds_pcm_release_tag')
+            logger.debug('Explicit PCM tag used: %s', version)
             return f'{job_name}:{version}'
 
         mozart_es_client = self.get_mozart_es_client()
@@ -288,12 +294,14 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
                 'query': {
                     'prefix': {
                         'id.keyword': {
-                            'value': f'${job_name}:'
+                            'value': f'{job_name}:'
                         }
                     }
                 }
             }
         )
+
+        logger.debug('Job spec results: %s', str(results['hits']['hits']))
 
         if len(results['hits']['hits']) == 0:
             raise RuntimeError('Specified job spec not found')
@@ -303,12 +311,13 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
             version = _SemVer.attempt_parse(result['_source']['job-version'])
             if version is None:
                 # No semver compatible version found
+                logger.trace('No semver found: %s', version)
                 continue
 
             if version not in job_versions:
                 job_versions[version] = result['_source']
 
-        latest_version = job_versions[
-            sorted(job_versions.keys(), reverse=True)[0]
-        ]
-        return f'{job_name}:{latest_version}'
+        sorted_versions = sorted(job_versions.keys(), reverse=True)
+        logger.debug('Sorted versions: %s', str(sorted_versions))
+
+        return job_versions[sorted_versions[0]]['id']
