@@ -1,17 +1,18 @@
 [tool.poetry]
 name = "swodlr-common"
-version = "0.1.0"
+version = "1.0.0-rc0"
 description = "A support library for SWODLR Python microservices containing common utilities, models, and JSON schemas"
 authors = ["podaac-tva <podaac-tva@jpl.nasa.gov>"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{include = "swodlr_common"}]
+packages = [{include = "podaac/swodlr_common"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
 boto3 = "^1.28.38"
 fastjsonschema = "^2.18.0"
 requests = "^2.31.0"
+elasticsearch = "~7.10.1"
 
 
 [tool.poetry.group.dev.dependencies]
