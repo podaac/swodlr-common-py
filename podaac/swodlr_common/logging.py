@@ -1,5 +1,6 @@
 '''Useful logging utilities and helpers'''
-from logging import LoggerAdapter
+import json
+from logging import Formatter, LogRecord, LoggerAdapter
 
 
 class JobMetadataInjector(LoggerAdapter):
@@ -24,3 +25,27 @@ class JobMetadataInjector(LoggerAdapter):
             )
 
         return (msg, kwargs)
+
+class JsonFormatter(Formatter):
+    def format(self, record: LogRecord, datefmt=None):
+        timestamp = self.formatTime(record)
+        level = record.levelname
+        message = record.getMessage()
+
+        output = {
+            'timestamp': timestamp,
+            'level': level,
+            'message': message
+        }
+
+        if record.exc_info:
+            output.update(exception=record.exc_info)
+
+        if record.stack_info:
+            stack = self.formatStack(record.stack_info)
+            output.update(stack=stack)
+
+        if record.args:
+            output.update(args=record.args)
+
+        return json.dumps(output)
