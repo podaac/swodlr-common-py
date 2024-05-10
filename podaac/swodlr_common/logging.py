@@ -21,8 +21,14 @@ class JobMetadataInjector(LoggerAdapter):
 
         return (msg, kwargs)
 
+
 class JsonFormatter(Formatter):
-    def format(self, record: LogRecord, datefmt=None):
+    '''
+    A Formatter subclass which provides JSON-readable log formats for easier
+    ingestion and parsing
+    '''
+
+    def format(self, record: LogRecord, _datefmt=None):
         timestamp = self.formatTime(record)
         level = record.levelname
         message = record.getMessage()
