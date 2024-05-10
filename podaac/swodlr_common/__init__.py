@@ -1,5 +1,5 @@
 import logging
-from .logging import JsonFormatter
+from podaac.swodlr_common.logging import JsonFormatter
 
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(JsonFormatter)
