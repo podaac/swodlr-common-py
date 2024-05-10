@@ -10,7 +10,7 @@ class JobMetadataInjector(LoggerAdapter):
     '''
 
     def __init__(self, logger, job):
-        super().__init__(logger)
+        super().__init__(logger, None)
         self._job = job
 
     def process(self, msg, kwargs):
