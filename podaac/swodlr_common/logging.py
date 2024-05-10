@@ -10,12 +10,14 @@ class JobMetadataInjector(LoggerAdapter):
     '''
 
     def __init__(self, logger, job):
-        super().__init__(logger, None)
+        super().__init__(logger)
         self._job = job
 
     def process(self, msg, kwargs):
-        kwargs['product_id'] = self._job.get('product_id')
-        kwargs['job_id'] = self._job.get('job_id')
+        kwargs['extra'] = {
+            'product_id': self._job.get('product_id'),
+            'job_id': self._job.get('job_id')
+        }
 
         return (msg, kwargs)
 
@@ -40,11 +42,9 @@ class JsonFormatter(Formatter):
 
         if record.args:
             output.update(args=record.args)
-            
-        if record.product_id:
-            output.update(product_id=record.product_id)
-        
-        if record.job_id:
-            output.update(job_id=record.job_id)
+
+        for key in ('product_id', 'job_id'):
+            if hasattr(record, key):
+                output.update(**{key: getattr(record, key)})
 
         return json.dumps(output)
