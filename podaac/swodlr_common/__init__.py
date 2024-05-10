@@ -1,9 +1,9 @@
-import logging
-from podaac.swodlr_common.logging import JsonFormatter
+import logging as pylogging
+from .logging import JsonFormatter
 
-stream_handler = logging.StreamHandler()
+stream_handler = pylogging.StreamHandler()
 stream_handler.setFormatter(JsonFormatter)
 
-logging.basicConfig(
+pylogging.basicConfig(
     stream_handler=stream_handler
 )
