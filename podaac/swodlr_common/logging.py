@@ -21,6 +21,18 @@ class JobMetadataInjector(LoggerAdapter):
 
         return (msg, kwargs)
 
+class LaxJsonEncoder(json.JSONEncoder):
+    '''
+    Subclassed JSON encoder which takes anything unserializable and attempts to
+    serialize into a string. Otherwise, returns a typeerror
+    '''
+    
+    def default(self, o):
+        try:
+            return str(o)
+        except:
+            self.default(o)
+
 
 class JsonFormatter(Formatter):
     '''
@@ -53,4 +65,4 @@ class JsonFormatter(Formatter):
             if hasattr(record, key):
                 output.update(**{key: getattr(record, key)})
 
-        return json.dumps(output)
+        return json.dumps(output, cls=LaxJsonEncoder)
