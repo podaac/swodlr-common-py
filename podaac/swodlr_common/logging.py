@@ -28,10 +28,7 @@ class LaxJsonEncoder(json.JSONEncoder):
     '''
     
     def default(self, o):
-        try:
-            return str(o)
-        except:
-            self.default(o)
+        return str(o)
 
 
 class JsonFormatter(Formatter):
@@ -65,4 +62,4 @@ class JsonFormatter(Formatter):
             if hasattr(record, key):
                 output.update(**{key: getattr(record, key)})
 
-        return json.dumps(output, cls=LaxJsonEncoder)
+        return json.dumps(output, default=lambda o: str(o))
