@@ -53,4 +53,4 @@ class JsonFormatter(Formatter):
             if hasattr(record, key):
                 output.update(**{key: getattr(record, key)})
 
-        return json.dumps(output)
+        return json.dumps(output, default=lambda val: str(val))
