@@ -14,6 +14,7 @@ from elasticsearch import Elasticsearch
 from requests import Session
 
 import podaac.swodlr_common
+from podaac.swodlr_common.logging import JsonFormatter
 
 
 class _SemVer:
@@ -200,6 +201,11 @@ class BaseUtilities(ABC):  # pylint: disable=too-many-instance-attributes
         log_level = getattr(logging, self.get_param('log_level')) \
             if self.get_param('log_level') is not None else logging.INFO
         logger.setLevel(log_level)
+
+        jsonFormatter = JsonFormatter()
+        for handler in logger.handlers:
+            handler.setFormatter(jsonFormatter)
+
         return logger
 
     def load_json_schema(self, name):
