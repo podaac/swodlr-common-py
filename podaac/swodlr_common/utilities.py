@@ -14,7 +14,6 @@ from elasticsearch import Elasticsearch
 from requests import Session
 
 import podaac.swodlr_common
-from podaac.swodlr_common.logging import JsonFormatter
 
 
 class _SemVer:
